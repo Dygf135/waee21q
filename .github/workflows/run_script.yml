@@ -1,49 +1,19 @@
-name: Run Selenium Script
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  run-script:
-    runs-on: ubuntu-latest
+- name: Install ChromeDriver
+  run: |
+    CHROMEDRIVER_VERSION="114.0.5735.90"  # Specify a known working version
+    echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
     
-    steps:
-    - uses: actions/checkout@v2
+    CHROMEDRIVER_URL="https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+    echo "Downloading ChromeDriver from: $CHROMEDRIVER_URL"
     
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+    wget -q -O /tmp/chromedriver.zip "$CHROMEDRIVER_URL" || { echo "Failed to download ChromeDriver"; exit 1; }
     
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
-        sudo apt-get install -y ffmpeg
-        sudo apt-get install -y portaudio19-dev python3-pyaudio
+    echo "Unzipping ChromeDriver"
+    sudo unzip -o /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ || { echo "Failed to unzip ChromeDriver"; exit 1; }
     
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+    echo "Setting permissions for ChromeDriver"
+    sudo chmod +x /usr/local/bin/chromedriver
     
-    - name: Install ChromeDriver
-      run: |
-        CHROME_VERSION=$(google-chrome --version | awk '{ print $3 }' | awk -F'.' '{ print $1"."$2"."$3 }')
-        CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
-        wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-        sudo unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
-    
-    - name: Run script
-      run: python x.py
-    
-    - name: Upload screenshot
-      uses: actions/upload-artifact@v2
-      with:
-        name: screenshot
-        path: screenshot.png
+    echo "ChromeDriver installation complete"
+    chromedriver --version
+  shell: /usr/bin/bash -e {0}
